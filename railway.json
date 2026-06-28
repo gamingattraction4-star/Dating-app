@@ -6,8 +6,8 @@
   },
   "deploy": {
     "startCommand": "java -jar app.jar --spring.profiles.active=prod",
-    "healthcheckPath": "/actuator/health",
-    "healthcheckTimeout": 180,
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }

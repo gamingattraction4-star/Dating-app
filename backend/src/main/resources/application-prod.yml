@@ -9,28 +9,54 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # Be patient with a cloud DB that may take a moment to accept connections.
+      connection-timeout: 30000
+      # Don't kill the whole app at boot if the DB is briefly unreachable;
+      # keep retrying instead of crashing the container.
+      initialization-fail-timeout: 60000
+      maximum-pool-size: 5
+      minimum-idle: 1
 
   jpa:
     hibernate:
       # Auto-create/update tables on first boot so you don't have to run schema.sql.
       ddl-auto: update
     show-sql: false
+    open-in-view: false
 
   flyway:
     enabled: false
 
-  # Redis is optional — the code doesn't require it. If REDIS_HOST is unset,
-  # Spring won't actively connect during normal request handling.
+  # Redis is optional — the code doesn't require it.
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-# Don't let an absent Redis mark the whole app as DOWN.
+  # Don't auto-configure Redis at all unless explicitly enabled — avoids any
+  # startup connection attempts to a Redis that doesn't exist on free hosting.
+  autoconfigure:
+    exclude: ${REDIS_AUTOCONFIG_EXCLUDE:org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration}
+
+# Actuator: expose health, and make the probe DB-aware but resilient.
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
   health:
     redis:
-      enabled: ${REDIS_ENABLED:false}
+      enabled: false
+    # DB down shouldn't make the whole app report DOWN to the load balancer;
+    # the app still serves traffic and Hikari retries.
+    db:
+      enabled: ${HEALTH_DB_ENABLED:true}
 
 app:
   # Seed demo data on first prod boot ONLY if you explicitly opt in.
