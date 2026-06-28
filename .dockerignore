@@ -1,0 +1,14 @@
+# Root build context — only backend/ is needed by the root Dockerfile.
+# Exclude everything heavy/irrelevant so the upload to Railway stays small.
+mobile/
+website/
+backend/target/
+backend/uploads/
+backend/app.log
+backend/app.pid
+backend/*.class
+**/.git
+**/.idea
+**/node_modules
+*.iml
+*.md

@@ -1,0 +1,10 @@
+# Keep the Docker build context small and reproducible
+target/
+uploads/
+app.log
+app.pid
+*.class
+TestDB.class
+.git
+.idea
+*.iml
