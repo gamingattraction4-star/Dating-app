@@ -46,9 +46,18 @@ export default function RegisterScreen({ navigation }: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.navigate('ProfileSetup');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed. Please check your connection.';
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', message);
+      let message: string;
+      if (error.response?.data?.message) {
+        // Real server validation error (e.g. email already registered).
+        message = error.response.data.message;
+      } else if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
+        // No response = network / server-asleep issue, not the user's fault.
+        message = 'Could not reach the server. It may be waking up — please wait a few seconds and try again.';
+      } else {
+        message = 'Registration failed. Please try again.';
+      }
+      Alert.alert('Sign up', message);
     } finally {
       setLoading(false);
     }

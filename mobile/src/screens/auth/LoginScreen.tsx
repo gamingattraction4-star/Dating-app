@@ -35,9 +35,16 @@ export default function LoginScreen({ navigation }: any) {
       await bootstrapUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed. Please check your connection and try again.';
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Login Failed', message);
+      let message: string;
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
+        message = 'Could not reach the server. It may be waking up — please wait a few seconds and try again.';
+      } else {
+        message = 'Login failed. Please try again.';
+      }
+      Alert.alert('Sign in', message);
       shake();
     } finally {
       setLoading(false);

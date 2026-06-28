@@ -29,7 +29,9 @@ spring:
       # Auto-create/update tables on first boot so you don't have to run schema.sql.
       ddl-auto: update
     show-sql: false
-    open-in-view: false
+    # Keep open-in-view ON (Spring's default) so lazy associations resolve in the
+    # response-mapping layer — matches the dev profile where everything works.
+    open-in-view: true
 
   flyway:
     enabled: false

@@ -56,6 +56,7 @@ public class SwipeService {
     /**
      * Get discoverable profiles based on user preferences
      */
+    @Transactional(readOnly = true)
     public List<ProfileResponse> getDiscoverProfiles(Long userId, int page, int size) {
         UserPreferences prefs = preferencesRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Preferences", "userId", userId));
@@ -208,6 +209,7 @@ public class SwipeService {
     /**
      * Get all active matches
      */
+    @Transactional(readOnly = true)
     public List<MatchResponse> getMatches(Long userId) {
         List<Match> matches = matchRepository.findActiveMatchesForUser(userId);
 
@@ -259,6 +261,7 @@ public class SwipeService {
     /**
      * Get users who liked you (premium)
      */
+    @Transactional(readOnly = true)
     public List<ProfileResponse> getWhoLikedMe(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));

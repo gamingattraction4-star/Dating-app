@@ -5,7 +5,9 @@ import { API_BASE_URL } from '../config';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  // Free hosting (Railway/Render) sleeps when idle; the first request can take
+  // 20-40s to wake the server. A generous timeout avoids false "failed" errors.
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -26,10 +28,29 @@ api.interceptors.request.use(
 // Response interceptor — transparent token refresh on 401
 let refreshPromise: Promise<string | null> | null = null;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Cold-start / transient retry: if the server is waking up (timeout, network
+    // error, or 502/503/504) retry up to twice with a short backoff before giving up.
+    const isColdStart =
+      !error.response ||
+      [502, 503, 504].includes(error.response?.status);
+    const isTimeoutOrNetwork =
+      error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response;
+
+    if (originalRequest && (isColdStart || isTimeoutOrNetwork)) {
+      originalRequest._coldRetries = originalRequest._coldRetries || 0;
+      if (originalRequest._coldRetries < 2) {
+        originalRequest._coldRetries += 1;
+        await sleep(2000 * originalRequest._coldRetries);
+        return api(originalRequest);
+      }
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
