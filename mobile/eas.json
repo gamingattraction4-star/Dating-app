@@ -8,7 +8,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-BACKEND-URL"
+        "EXPO_PUBLIC_API_URL": "https://dating-app-production-0327.up.railway.app"
       }
     },
     "production": {
@@ -16,7 +16,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-BACKEND-URL"
+        "EXPO_PUBLIC_API_URL": "https://dating-app-production-0327.up.railway.app"
       }
     }
   },
