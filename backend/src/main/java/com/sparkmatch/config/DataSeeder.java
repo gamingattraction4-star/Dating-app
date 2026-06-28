@@ -71,16 +71,22 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.count() > 0) {
-            log.info("⏩ Seed skipped — users already exist ({} rows).", userRepository.count());
+        // Reference data (interests/prompts) is always ensured — cheap and idempotent.
+        ensureInterests();
+        ensurePrompts();
+
+        // Demo users are seeded only once. Key off the canonical demo account so a
+        // few stray test signups on a fresh cloud DB don't block seeding.
+        if (userRepository.existsByEmail("arjun@demo.com")) {
+            log.info("⏩ Demo users already seeded — skipping.");
             return;
         }
         log.info("🌱 Seeding demo data...");
 
         List<Interest> interests = interestRepository.findAll();
         List<IceBreakerPrompt> prompts = promptRepository.findAll();
-        if (interests.isEmpty()) {
-            log.warn("No interests found — run schema seed first. Skipping demo seed.");
+        if (interests.isEmpty() || prompts.isEmpty()) {
+            log.warn("Reference data missing and could not be created — skipping demo seed.");
             return;
         }
 
@@ -136,6 +142,49 @@ public class DataSeeder implements CommandLineRunner {
 
         log.info("✅ Seed complete: {} users, {} matches. Demo login: arjun@demo.com / {}",
                 userRepository.count(), matchRepository.count(), DEMO_PASSWORD);
+    }
+
+    // ==================== Reference data ====================
+
+    /** Seeds the interest catalogue if empty (mirrors schema.sql). */
+    private void ensureInterests() {
+        if (interestRepository.count() > 0) return;
+        String[][] data = {
+            {"Travel", "Lifestyle", "✈️"}, {"Music", "Entertainment", "🎵"},
+            {"Cooking", "Lifestyle", "🍳"}, {"Fitness", "Health", "💪"},
+            {"Photography", "Creative", "📷"}, {"Reading", "Education", "📚"},
+            {"Gaming", "Entertainment", "🎮"}, {"Movies", "Entertainment", "🎬"},
+            {"Yoga", "Health", "🧘"}, {"Dancing", "Entertainment", "💃"},
+            {"Art", "Creative", "🎨"}, {"Hiking", "Outdoor", "🥾"},
+            {"Coffee", "Lifestyle", "☕"}, {"Wine", "Lifestyle", "🍷"},
+            {"Dogs", "Pets", "🐕"}, {"Cats", "Pets", "🐈"},
+            {"Tech", "Career", "💻"}, {"Fashion", "Lifestyle", "👗"},
+            {"Food", "Lifestyle", "🍕"}, {"Sports", "Health", "⚽"},
+            {"Surfing", "Outdoor", "🏄"}, {"Baking", "Lifestyle", "🧁"},
+        };
+        for (String[] d : data) {
+            interestRepository.save(Interest.builder()
+                    .name(d[0]).category(d[1]).icon(d[2]).build());
+        }
+        log.info("Seeded {} interests", data.length);
+    }
+
+    /** Seeds ice-breaker prompts if empty (mirrors schema.sql). */
+    private void ensurePrompts() {
+        if (promptRepository.count() > 0) return;
+        String[][] data = {
+            {"Two truths and a lie...", "Fun"},
+            {"My most controversial opinion is...", "Deep"},
+            {"The way to win me over is...", "Romantic"},
+            {"A perfect first date would be...", "Romantic"},
+            {"I'm looking for someone who...", "Serious"},
+            {"My simple pleasures are...", "Casual"},
+        };
+        for (String[] d : data) {
+            promptRepository.save(IceBreakerPrompt.builder()
+                    .promptText(d[0]).category(d[1]).isSystem(true).build());
+        }
+        log.info("Seeded {} prompts", data.length);
     }
 
     // ==================== Builders ====================
