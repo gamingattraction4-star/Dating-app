@@ -1,0 +1,26 @@
+# OS
+.DS_Store
+
+# Backend (Java / Maven)
+backend/target/
+backend/app.log
+backend/app.pid
+backend/*.class
+backend/TestDB.class
+
+# Mobile (Node / Expo)
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+npm-debug.*
+
+# Env / secrets
+.env
+.env.local
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml

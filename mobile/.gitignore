@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+
+# Env / secrets
+.env
+.env.local
+
+# macOS
+.DS_Store

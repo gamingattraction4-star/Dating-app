@@ -1,0 +1,45 @@
+# ================================================
+# Production profile — driven entirely by env vars
+# Used when SPRING_PROFILES_ACTIVE=prod (e.g. on Railway/Render/VPS)
+# ================================================
+spring:
+  datasource:
+    # Set DATABASE_URL (JDBC form) OR the individual SPRING_DATASOURCE_* vars.
+    url: ${DATABASE_URL:${SPRING_DATASOURCE_URL}}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # Auto-create/update tables on first boot so you don't have to run schema.sql.
+      ddl-auto: update
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+  # Redis is optional — the code doesn't require it. If REDIS_HOST is unset,
+  # Spring won't actively connect during normal request handling.
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+# Don't let an absent Redis mark the whole app as DOWN.
+management:
+  health:
+    redis:
+      enabled: ${REDIS_ENABLED:false}
+
+app:
+  # Seed demo data on first prod boot ONLY if you explicitly opt in.
+  seed:
+    enabled: ${APP_SEED_ENABLED:false}
+  # Where uploaded photos are served from. Point CDN_BASE_URL at your public host.
+  cdn:
+    base-url: ${CDN_BASE_URL:}
+
+logging:
+  level:
+    com.sparkmatch: INFO

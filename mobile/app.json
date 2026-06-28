@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "SparkMatch",
+    "slug": "sparkmatch",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sparkmatch.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "SparkMatch needs your location to find matches near you",
+        "NSPhotoLibraryUsageDescription": "SparkMatch needs access to your photos for your profile",
+        "NSCameraUsageDescription": "SparkMatch needs camera access for profile photos"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "package": "com.sparkmatch.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-location",
+      "expo-image-picker",
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ],
+      "expo-asset"
+    ]
+  }
+}
