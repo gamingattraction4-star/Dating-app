@@ -4,10 +4,16 @@
 # ================================================
 spring:
   datasource:
-    # Set DATABASE_URL (JDBC form) OR the individual SPRING_DATASOURCE_* vars.
-    url: ${DATABASE_URL:${SPRING_DATASOURCE_URL}}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    # Connection comes from ONE of:
+    #   1. A single URL var (DATABASE_URL / MYSQL_URL) in mysql://user:pass@host:port/db
+    #      form — auto-split into url/username/password by
+    #      DatabaseUrlEnvironmentPostProcessor (recommended on Railway).
+    #   2. The individual SPRING_DATASOURCE_URL / _USERNAME / _PASSWORD vars.
+    # The empty defaults below prevent a literal "${...}" from being used when
+    # a var is missing (which would crash with a confusing error).
+    url: ${SPRING_DATASOURCE_URL:}
+    username: ${SPRING_DATASOURCE_USERNAME:}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       # Be patient with a cloud DB that may take a moment to accept connections.
