@@ -24,3 +24,7 @@ npm-debug.*
 .idea/
 .vscode/
 *.iml
+
+# Built APK (upload to Hostinger, not git)
+website/*.apk
+mobile/android/
