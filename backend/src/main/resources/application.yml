@@ -48,7 +48,8 @@ spring:
 # Server
 # ================================================
 server:
-  port: 8080
+  # Railway/Render inject a PORT env var; bind to it when present.
+  port: ${PORT:8080}
   error:
     include-message: always
     include-binding-errors: always

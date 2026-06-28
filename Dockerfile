@@ -32,6 +32,7 @@ USER appuser
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+  CMD wget -q --spider http://localhost:${PORT:-8080}/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod}"]
+# Shell form so ${SPRING_PROFILES_ACTIVE} expands at runtime.
+ENTRYPOINT java -jar app.jar --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod}
