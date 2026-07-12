@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final BrevoEmailSender brevo;
 
     @Value("${app.mail.enabled:false}")
     private boolean enabled;
@@ -70,6 +71,12 @@ public class EmailService {
 
     private void send(String to, String subject, String html) {
         if (to == null || !to.contains("@")) return;
+
+        // Prefer Brevo (HTTP API) — works on hosts that block SMTP (e.g. Render).
+        if (brevo.isEnabled()) {
+            brevo.send(to, subject, html);
+            return;
+        }
         if (!enabled) {
             log.info("✉️ [MAIL DISABLED] To: {} | Subject: {}", to, subject);
             return;
@@ -93,14 +100,18 @@ public class EmailService {
      * endpoint). Returns null on success, or the error message on failure.
      */
     public String testSend(String to) {
-        if (!enabled) return "MAIL_ENABLED is false — set it to true in the environment.";
+        String html = "<h2>It works! ✅</h2><p>SparkMatch email delivery is configured correctly.</p>";
+        if (brevo.isEnabled()) {
+            return brevo.send(to, "SparkMatch email test", html);
+        }
+        if (!enabled) return "No email provider configured (set BREVO_API_KEY, or MAIL_ENABLED=true with SMTP).";
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(from, fromName);
             helper.setTo(to);
             helper.setSubject("SparkMatch email test");
-            helper.setText("<h2>It works! ✅</h2><p>SparkMatch email delivery is configured correctly.</p>", true);
+            helper.setText(html, true);
             mailSender.send(message);
             return null;
         } catch (Exception e) {

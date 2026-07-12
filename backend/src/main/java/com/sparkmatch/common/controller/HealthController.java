@@ -36,6 +36,9 @@ public class HealthController {
     @Value("${spring.mail.username:}")
     private String mailUsername;
 
+    @Value("${app.mail.brevo-key:}")
+    private String brevoKey;
+
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
         return ResponseEntity.ok(ApiResponse.success(Map.of(
@@ -53,6 +56,8 @@ public class HealthController {
     @GetMapping("/mail-check")
     public ResponseEntity<ApiResponse<Map<String, Object>>> mailCheck(@RequestParam String to) {
         Map<String, Object> result = new HashMap<>();
+        result.put("provider", (brevoKey != null && !brevoKey.isBlank()) ? "brevo" : "smtp");
+        result.put("brevoConfigured", brevoKey != null && !brevoKey.isBlank());
         result.put("mailEnabled", mailEnabled);
         result.put("host", mailHost);
         result.put("port", mailPort);

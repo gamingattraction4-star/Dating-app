@@ -118,6 +118,9 @@ app:
     enabled: ${MAIL_ENABLED:false}
     from: ${MAIL_FROM:business@wevsync.com}
     from-name: ${MAIL_FROM_NAME:SparkMatch}
+    # Brevo transactional email API key. When set, email is sent over HTTPS via
+    # Brevo (works on hosts that block SMTP, e.g. Render). Preferred over SMTP.
+    brevo-key: ${BREVO_API_KEY:}
 
   # CORS — comma-separated origins. "*" is fine for the mobile app; set your
   # website domain(s) in production (e.g. https://yourdomain.com).
