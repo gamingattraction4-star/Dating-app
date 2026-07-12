@@ -9,7 +9,6 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { useAppStore } from './src/store/appStore';
 import { Colors } from './src/theme';
-import { chatSocket } from './src/services/chatSocket';
 
 /**
  * Top-level error boundary. If anything crashes during render, show a friendly
@@ -63,7 +62,11 @@ export default function App() {
         console.log('hydrateTheme failed', e);
       }
       try {
-        if (useAuthStore.getState().isAuthenticated) chatSocket.connect();
+        if (useAuthStore.getState().isAuthenticated) {
+          // Lazy-load so STOMP/text-encoding never runs during first render.
+          const { chatSocket } = await import('./src/services/chatSocket');
+          chatSocket.connect();
+        }
       } catch (e) {
         console.log('socket connect failed', e);
       }

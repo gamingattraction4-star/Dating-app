@@ -6,8 +6,13 @@ import { ChatMessage } from '../types';
 import { WS_URL } from '../config';
 import { useAuthStore } from '../store/authStore';
 
-// React Native lacks TextEncoder/TextDecoder which STOMP needs.
-import 'text-encoding';
+// STOMP needs TextEncoder/TextDecoder. Hermes ships these already; only polyfill
+// when they're genuinely missing, so we don't clobber the native ones (which can
+// crash on startup). This runs at import but is a cheap, guarded check.
+if (typeof (global as any).TextEncoder === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('text-encoding');
+}
 
 export interface TypingEvent {
   conversationId: number;
