@@ -50,8 +50,11 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             String parseable = raw.startsWith("jdbc:") ? raw.substring(5) : raw;
             URI uri = new URI(parseable);
 
+            String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
+            boolean isPostgres = scheme.startsWith("postgres");
+
             String host = uri.getHost();
-            int port = uri.getPort() > 0 ? uri.getPort() : 3306;
+            int port = uri.getPort() > 0 ? uri.getPort() : (isPostgres ? 5432 : 3306);
             String db = uri.getPath() != null && uri.getPath().length() > 1
                     ? uri.getPath().substring(1) : "railway";
 
@@ -68,9 +71,12 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 return; // Couldn't parse; let the normal config path handle it.
             }
 
-            String jdbcUrl = String.format(
-                    "jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
-                    host, port, db);
+            // sslmode=prefer: uses SSL when the server supports it (Render/managed),
+            // falls back to plain when it doesn't (local Docker) — works everywhere.
+            String sslMode = env.getProperty("DB_SSLMODE", "prefer");
+            String jdbcUrl = isPostgres
+                    ? String.format("jdbc:postgresql://%s:%d/%s?sslmode=%s", host, port, db, sslMode)
+                    : String.format("jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC", host, port, db);
 
             Map<String, Object> props = new HashMap<>();
             props.put("spring.datasource.url", jdbcUrl);

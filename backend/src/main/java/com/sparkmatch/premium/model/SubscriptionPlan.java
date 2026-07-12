@@ -30,7 +30,8 @@ public class SubscriptionPlan {
     @Column(name = "duration_days", nullable = false)
     private Integer durationDays;
 
-    @Column(columnDefinition = "JSON")
+    // Stored as text (JSON string) for cross-database portability (MySQL/Postgres).
+    @Column(columnDefinition = "TEXT")
     private String features;
 
     @Column(name = "is_active")

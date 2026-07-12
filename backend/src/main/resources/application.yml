@@ -31,7 +31,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        # Dialect intentionally NOT set — Hibernate auto-detects it from the JDBC
+        # connection (MySQL in dev, PostgreSQL in prod).
         jdbc:
           time_zone: UTC
 

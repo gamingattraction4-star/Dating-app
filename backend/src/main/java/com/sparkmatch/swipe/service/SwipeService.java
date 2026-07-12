@@ -72,11 +72,18 @@ public class SwipeService {
             genderFilter = prefs.getGenderPreference().name();
         }
 
+        // Convert the age window to birthdate bounds so the SQL stays DB-portable.
+        // Someone aged maxAge was born at most (maxAge+1) years ago (minus a day);
+        // someone aged minAge was born at least minAge years ago.
+        LocalDate today = LocalDate.now();
+        LocalDate oldestBirthdate = today.minusYears(prefs.getMaxAge() + 1L).plusDays(1);
+        LocalDate youngestBirthdate = today.minusYears(prefs.getMinAge());
+
         List<UserProfile> profiles = profileRepository.findDiscoverableProfiles(
                 userId,
                 genderFilter,
-                prefs.getMinAge(),
-                prefs.getMaxAge(),
+                oldestBirthdate,
+                youngestBirthdate,
                 lat,
                 lng,
                 prefs.getMaxDistanceKm(),

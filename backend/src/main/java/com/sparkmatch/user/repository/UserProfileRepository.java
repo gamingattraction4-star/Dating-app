@@ -14,6 +14,9 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
 
     Optional<UserProfile> findByUserId(Long userId);
 
+    // Age is filtered via birthdate cutoffs (computed in Java) so the SQL is
+    // portable across MySQL and PostgreSQL. The Haversine distance uses only
+    // functions that exist in both (cos/sin/radians/acos/least).
     @Query(value = """
         SELECT p.* FROM user_profiles p
         JOIN users u ON p.user_id = u.id
@@ -24,19 +27,19 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
           AND u.id NOT IN (SELECT b.blocked_id FROM user_blocks b WHERE b.blocker_id = :userId)
           AND u.id NOT IN (SELECT b.blocker_id FROM user_blocks b WHERE b.blocked_id = :userId)
           AND (:gender IS NULL OR p.gender = :gender)
-          AND TIMESTAMPDIFF(YEAR, p.birthdate, CURDATE()) BETWEEN :minAge AND :maxAge
+          AND p.birthdate BETWEEN :oldestBirthdate AND :youngestBirthdate
           AND (
             :globalMode = TRUE
             OR (
               p.latitude IS NOT NULL AND p.longitude IS NOT NULL
               AND (6371 * acos(
-                LEAST(1.0, cos(radians(:lat)) * cos(radians(p.latitude))
+                least(1.0, cos(radians(:lat)) * cos(radians(p.latitude))
                 * cos(radians(p.longitude) - radians(:lng))
                 + sin(radians(:lat)) * sin(radians(p.latitude)))
               )) <= :maxDistance
             )
           )
-        ORDER BY 
+        ORDER BY
             CASE WHEN p.boost_end_time > CURRENT_TIMESTAMP THEN 1 ELSE 0 END DESC,
             u.last_active_at DESC
         LIMIT :limit OFFSET :offset
@@ -44,8 +47,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     List<UserProfile> findDiscoverableProfiles(
             @Param("userId") Long userId,
             @Param("gender") String gender,
-            @Param("minAge") int minAge,
-            @Param("maxAge") int maxAge,
+            @Param("oldestBirthdate") java.time.LocalDate oldestBirthdate,
+            @Param("youngestBirthdate") java.time.LocalDate youngestBirthdate,
             @Param("lat") double latitude,
             @Param("lng") double longitude,
             @Param("maxDistance") int maxDistanceKm,
