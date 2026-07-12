@@ -3,6 +3,10 @@
 # Used when SPRING_PROFILES_ACTIVE=prod (e.g. on Railway/Render/VPS)
 # ================================================
 spring:
+  # Lazy bean initialization -> much faster boot so Render's port scan doesn't
+  # time out (beans are created on first use instead of all at startup).
+  main:
+    lazy-initialization: true
   datasource:
     # Connection comes from ONE of:
     #   1. A single URL var (DATABASE_URL) in postgres://user:pass@host:port/db
@@ -33,6 +37,14 @@ spring:
     open-in-view: true
 
   flyway:
+    enabled: false
+
+# Disable API docs generation in prod — it scans every controller at startup
+# and noticeably slows boot on small instances.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
     enabled: false
 
   # Redis is optional — the code doesn't require it.
