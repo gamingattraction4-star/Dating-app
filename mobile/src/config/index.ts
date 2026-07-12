@@ -43,12 +43,12 @@ function resolveDevHost(): string {
   return `http://localhost:${DEV_PORT}`;
 }
 
-// Production backend. EXPO_PUBLIC_API_URL (set in eas.json / build env) wins;
-// otherwise fall back to the live Railway deployment so release APKs always
+// Production backend on Render. EXPO_PUBLIC_API_URL (set in eas.json / build env)
+// wins; otherwise fall back to the live Render deployment so release APKs always
 // connect even when built locally without that env var.
 const PROD_API_URL =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ||
-  'https://dating-app-production-0327.up.railway.app';
+  'https://sparkmatch-backend.onrender.com';
 
 export const HOST = __DEV__ ? resolveDevHost() : PROD_API_URL;
 
