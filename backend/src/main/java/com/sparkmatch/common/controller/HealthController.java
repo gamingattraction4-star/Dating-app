@@ -73,4 +73,32 @@ public class HealthController {
         if (at <= 1) return "***";
         return s.charAt(0) + "***" + s.substring(at);
     }
+
+    /**
+     * Raw TCP connectivity test: can this server open a socket to common mail
+     * hosts/ports? Tells us if the host (Render) is blocking outbound SMTP, or if
+     * only Hostinger is unreachable. Usage: GET /api/net-check
+     */
+    @GetMapping("/net-check")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> netCheck() {
+        String[][] targets = {
+                {"smtp.hostinger.com", "587"},
+                {"smtp.hostinger.com", "465"},
+                {"smtp.gmail.com", "587"},
+                {"smtp-relay.brevo.com", "587"},
+                {"api.brevo.com", "443"},
+        };
+        Map<String, Object> results = new HashMap<>();
+        for (String[] t : targets) {
+            String key = t[0] + ":" + t[1];
+            long start = System.currentTimeMillis();
+            try (java.net.Socket sock = new java.net.Socket()) {
+                sock.connect(new java.net.InetSocketAddress(t[0], Integer.parseInt(t[1])), 8000);
+                results.put(key, "OPEN (" + (System.currentTimeMillis() - start) + "ms)");
+            } catch (Exception e) {
+                results.put(key, "BLOCKED/FAILED: " + e.getClass().getSimpleName());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success(results));
+    }
 }
