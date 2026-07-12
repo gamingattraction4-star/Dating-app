@@ -31,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final OtpService otpService;
+    private final com.sparkmatch.common.email.EmailService emailService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -69,16 +70,15 @@ public class AuthService {
                 .build();
         preferencesRepository.save(preferences);
 
-        // Generate tokens
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+        log.info("New user registered (pending OTP): id={}, email={}", user.getId(), user.getEmail());
 
-        log.info("New user registered: id={}, email={}", user.getId(), user.getEmail());
+        // Email OTP to verify ownership; tokens are issued only after verification.
+        if (user.getEmail() != null) {
+            otpService.generateAndSendOtp(user.getEmail(), "REGISTRATION");
+        }
 
         return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
+                .otpRequired(true)
                 .userId(user.getId())
                 .email(user.getEmail())
                 .displayName(request.getDisplayName())
@@ -86,6 +86,24 @@ public class AuthService {
                 .build();
     }
 
+    /** Step 2 of signup: verify the emailed OTP, then issue tokens + send welcome email. */
+    @Transactional
+    public AuthResponse verifyRegistrationOtp(String email, String otp) {
+        otpService.verifyOtp(email, otp);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        user.setIsVerified(true);
+        user.setLastActiveAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        UserProfile profile = profileRepository.findByUserId(user.getId()).orElse(null);
+        String name = profile != null ? profile.getDisplayName() : null;
+        emailService.sendWelcome(email, name);
+
+        return issueTokens(user, profile);
+    }
+
+    /** Step 1 of login: verify password, then email an OTP + a new-device alert. */
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmailOrPhone(request.getEmailOrPhone(), request.getEmailOrPhone())
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
@@ -93,25 +111,48 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid credentials");
         }
-
         if (user.getStatus() == User.UserStatus.BANNED) {
             throw new BadRequestException("Your account has been banned");
         }
-
         if (user.getStatus() == User.UserStatus.SUSPENDED) {
             throw new BadRequestException("Your account is suspended");
         }
 
-        // Update last active
+        if (user.getEmail() != null) {
+            otpService.generateAndSendOtp(user.getEmail(), "LOGIN");
+        }
+
+        return AuthResponse.builder()
+                .otpRequired(true)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .build();
+    }
+
+    /** Step 2 of login: verify the emailed OTP, issue tokens, send a device-login alert. */
+    @Transactional
+    public AuthResponse verifyLoginOtp(String emailOrPhone, String otp, String device) {
+        User user = userRepository.findByEmailOrPhone(emailOrPhone, emailOrPhone)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        // OTP was sent to the email on file.
+        otpService.verifyOtp(user.getEmail(), otp);
+
         user.setLastActiveAt(LocalDateTime.now());
         userRepository.save(user);
 
+        UserProfile profile = profileRepository.findByUserId(user.getId()).orElse(null);
+        String name = profile != null ? profile.getDisplayName() : null;
+        String when = LocalDateTime.now().toString().replace('T', ' ').substring(0, 16);
+        emailService.sendNewDeviceLogin(user.getEmail(), name, device != null ? device : "a new device", when);
+
+        return issueTokens(user, profile);
+    }
+
+    /** Builds an authenticated response with fresh JWTs. */
+    private AuthResponse issueTokens(User user, UserProfile profile) {
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-
-        UserProfile profile = profileRepository.findByUserId(user.getId()).orElse(null);
         boolean profileComplete = profile != null && profile.getProfileCompletePct() >= 80;
-
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)

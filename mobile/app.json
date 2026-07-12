@@ -43,7 +43,14 @@
           "fonts": []
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "color": "#FF4D67"
+        }
+      ],
+      "expo-web-browser"
     ]
   }
 }

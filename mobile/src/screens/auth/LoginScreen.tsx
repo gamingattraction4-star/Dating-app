@@ -31,16 +31,21 @@ export default function LoginScreen({ navigation }: any) {
     setLoading(true);
     try {
       const response = await authService.login({ emailOrPhone: emailOrPhone.trim(), password });
-      await setAuth(response);
-      await bootstrapUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Password OK -> backend emailed an OTP. Go verify it.
+      if (response.otpRequired) {
+        navigation.navigate('Otp', { mode: 'LOGIN', emailOrPhone: emailOrPhone.trim(), email: response.email });
+      } else {
+        await setAuth(response);
+        await bootstrapUser();
+      }
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       let message: string;
       if (error.response?.data?.message) {
         message = error.response.data.message;
       } else if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
-        message = 'Could not reach the server. It may be waking up — please wait a few seconds and try again.';
+        message = 'Could not reach the server. It may be waking up, please wait a few seconds and try again.';
       } else {
         message = 'Login failed. Please try again.';
       }

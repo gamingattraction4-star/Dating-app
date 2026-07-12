@@ -6,6 +6,23 @@ spring:
   application:
     name: sparkmatch
 
+  # Email (SMTP) — values come from env so credentials aren't committed.
+  mail:
+    host: ${MAIL_HOST:smtp.hostinger.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: ${MAIL_SSL:true}
+          starttls:
+            enable: ${MAIL_STARTTLS:false}
+        transport:
+          protocol: smtp
+
   # JPA / Hibernate
   jpa:
     hibernate:
@@ -78,9 +95,22 @@ app:
       access-key: ${AWS_ACCESS_KEY_ID:}
       secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
-  # CDN
+  # CDN — empty by default so uploaded photos are served by this backend at
+  # /photos/** (see WebMvcConfig). Set CDN_BASE_URL only when using real S3/CDN.
   cdn:
-    base-url: ${CDN_BASE_URL:http://localhost:4566/sparkmatch-media}
+    base-url: ${CDN_BASE_URL:}
+
+  # Transactional email. When enabled=false (default), emails are only logged —
+  # so OTP flows work in dev without real SMTP. Set MAIL_ENABLED=true + creds in prod.
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:business@wevsync.com}
+    from-name: ${MAIL_FROM_NAME:SparkMatch}
+
+  # CORS — comma-separated origins. "*" is fine for the mobile app; set your
+  # website domain(s) in production (e.g. https://yourdomain.com).
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
 
   # Matching
   matching:

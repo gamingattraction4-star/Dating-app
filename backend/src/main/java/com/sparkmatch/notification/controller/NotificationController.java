@@ -38,6 +38,16 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success(Map.of("count", count)));
     }
 
+    /** Register (or clear) this device's Expo push token for the signed-in user. */
+    @PostMapping("/push-token")
+    public ResponseEntity<ApiResponse<Void>> registerPushToken(
+            Authentication auth,
+            @RequestBody Map<String, String> body) {
+        Long userId = (Long) auth.getPrincipal();
+        notificationService.savePushToken(userId, body.get("token"));
+        return ResponseEntity.ok(ApiResponse.success("Push token saved"));
+    }
+
     @PutMapping("/{notificationId}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
             Authentication auth,

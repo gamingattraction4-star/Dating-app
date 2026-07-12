@@ -58,6 +58,10 @@ public class User {
     @Column(name = "last_active_at")
     private LocalDateTime lastActiveAt;
 
+    // Expo push token for sending device push notifications (nullable).
+    @Column(name = "push_token", length = 255)
+    private String pushToken;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

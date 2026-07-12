@@ -41,10 +41,9 @@ export default function RegisterScreen({ navigation }: any) {
       const response = await authService.register({
         email: email.trim(), password, displayName: name.trim(),
       });
-      await setAuth(response);
-      await bootstrapUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.navigate('ProfileSetup');
+      // Account created -> backend emailed a verification OTP.
+      navigation.navigate('Otp', { mode: 'REGISTER', email: response.email || email.trim() });
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       let message: string;
@@ -53,7 +52,7 @@ export default function RegisterScreen({ navigation }: any) {
         message = error.response.data.message;
       } else if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
         // No response = network / server-asleep issue, not the user's fault.
-        message = 'Could not reach the server. It may be waking up — please wait a few seconds and try again.';
+        message = 'Could not reach the server. It may be waking up, please wait a few seconds and try again.';
       } else {
         message = 'Registration failed. Please try again.';
       }

@@ -1,7 +1,26 @@
 // SparkMatch — API Client
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, resolvePhotoUrl } from '../config';
+
+// Recursively rewrite any photo URL fields (server-relative -> absolute) so
+// <Image> can load uploaded photos regardless of which screen renders them.
+const PHOTO_KEYS = ['photoUrl', 'thumbnailUrl', 'otherUserPhoto', 'photo'];
+function fixPhotoUrls(node: any): void {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    node.forEach(fixPhotoUrls);
+    return;
+  }
+  for (const key of Object.keys(node)) {
+    const val = node[key];
+    if (typeof val === 'string' && PHOTO_KEYS.includes(key)) {
+      node[key] = resolvePhotoUrl(val);
+    } else if (val && typeof val === 'object') {
+      fixPhotoUrls(val);
+    }
+  }
+}
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -31,7 +50,11 @@ let refreshPromise: Promise<string | null> | null = null;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Normalise photo URLs in every successful response.
+    if (response.data) fixPhotoUrls(response.data);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 

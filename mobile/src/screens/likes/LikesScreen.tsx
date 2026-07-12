@@ -1,25 +1,22 @@
-// SparkMatch — Who Liked You (premium-gated)
-import React, { useState, useCallback } from 'react';
+// SparkMatch — Who Liked You (free for everyone)
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity, StatusBar, ActivityIndicator, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
+import { Colors, Typography, Spacing, BorderRadius, useTheme, ActiveTheme } from '../../theme';
 import { swipeService } from '../../services/swipeService';
-import { useAppStore } from '../../store/appStore';
 import { Profile } from '../../types';
 
 const COL_GAP = Spacing.md;
 const CARD_W = (Dimensions.get('window').width - Spacing.xl * 2 - COL_GAP) / 2;
 
 export default function LikesScreen({ navigation }: any) {
-  const myProfile = useAppStore((s) => s.myProfile);
-  const isPremium = !!myProfile?.premium;
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [likes, setLikes] = useState<Profile[]>([]);
-  const [count, setCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -27,11 +24,8 @@ export default function LikesScreen({ navigation }: any) {
     try {
       const data = await swipeService.getWhoLikedMe();
       setLikes(data);
-      setCount(data.length);
-    } catch (e: any) {
-      // 403 for non-premium — backend still tells us nothing; show locked state.
+    } catch {
       setLikes([]);
-      setCount(null);
     } finally {
       setLoading(false);
     }
@@ -42,26 +36,30 @@ export default function LikesScreen({ navigation }: any) {
   const renderItem = ({ item }: { item: Profile }) => {
     const photo = item.photos?.[0]?.photoUrl;
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} activeOpacity={0.85}>
         <Image source={photo ? { uri: photo } : require('../../../assets/icon.png')} style={styles.cardImg} />
-        {!isPremium && <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />}
-        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.cardOverlay}>
-          {isPremium ? (
-            <Text style={styles.cardName} numberOfLines={1}>{item.displayName}{item.age ? `, ${item.age}` : ''}</Text>
-          ) : (
-            <Ionicons name="heart" size={20} color={Colors.white} />
-          )}
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.cardOverlay}>
+          <View style={styles.nameRow}>
+            <Text style={styles.cardName} numberOfLines={1}>
+              {item.displayName}{item.age ? `, ${item.age}` : ''}
+            </Text>
+            {item.verified && <Ionicons name="checkmark-circle" size={14} color={Colors.verified} />}
+          </View>
+          {!!item.city && <Text style={styles.cardCity} numberOfLines={1}>{item.city}</Text>}
         </LinearGradient>
-      </View>
+        <View style={styles.likeBadge}>
+          <Ionicons name="heart" size={14} color={Colors.white} />
+        </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={t.isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={26} color={Colors.dark.text} />
+          <Ionicons name="chevron-back" size={26} color={t.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Likes You</Text>
         <View style={{ width: 26 }} />
@@ -71,7 +69,7 @@ export default function LikesScreen({ navigation }: any) {
         <ActivityIndicator color={Colors.primary} style={{ marginTop: Spacing['3xl'] }} />
       ) : (
         <FlatList
-          data={likes.length ? likes : isPremium ? [] : placeholderCards()}
+          data={likes}
           renderItem={renderItem}
           keyExtractor={(item) => item.userId.toString()}
           numColumns={2}
@@ -79,28 +77,14 @@ export default function LikesScreen({ navigation }: any) {
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <Text style={styles.subtitle}>
-              {isPremium
-                ? `${count ?? likes.length} people like you`
-                : 'Upgrade to see everyone who already liked you 👀'}
+              {likes.length ? `${likes.length} ${likes.length === 1 ? 'person likes' : 'people like'} you 💕` : ''}
             </Text>
           }
           ListEmptyComponent={
-            isPremium ? (
-              <View style={styles.empty}>
-                <Ionicons name="heart-outline" size={56} color={Colors.dark.textMuted} />
-                <Text style={styles.emptyText}>No likes yet — keep swiping!</Text>
-              </View>
-            ) : null
-          }
-          ListFooterComponent={
-            !isPremium ? (
-              <TouchableOpacity style={styles.upgradeBtn} onPress={() => navigation.navigate('Premium')} activeOpacity={0.85}>
-                <LinearGradient colors={Colors.gradient.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.upgradeGradient}>
-                  <Ionicons name="star" size={18} color={Colors.white} />
-                  <Text style={styles.upgradeText}>Unlock with Premium</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            ) : null
+            <View style={styles.empty}>
+              <Ionicons name="heart-outline" size={56} color={t.textMuted} />
+              <Text style={styles.emptyText}>No likes yet. Keep swiping and they'll show up here!</Text>
+            </View>
           }
         />
       )}
@@ -108,36 +92,25 @@ export default function LikesScreen({ navigation }: any) {
   );
 }
 
-// Blurred placeholder tiles for the locked (non-premium) state.
-function placeholderCards(): Profile[] {
-  return Array.from({ length: 6 }).map((_, i) => ({
-    userId: -(i + 1),
-    displayName: '',
-    age: 0,
-    gender: 'OTHER',
-    profileCompletePct: 0,
-    verified: false,
-    premium: false,
-    photos: [{ id: i, photoUrl: `https://picsum.photos/seed/like${i}/400/500`, orderIndex: 0, primary: true }],
-  })) as unknown as Profile[];
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.dark.bg },
+const makeStyles = (t: ActiveTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: t.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl, paddingTop: 60, paddingBottom: Spacing.md,
   },
-  headerTitle: { ...Typography.h3, color: Colors.dark.text },
-  subtitle: { ...Typography.body, color: Colors.dark.textSecondary, marginBottom: Spacing.lg },
+  headerTitle: { ...Typography.h3, color: t.text },
+  subtitle: { ...Typography.body, color: t.textSecondary, marginBottom: Spacing.lg },
   list: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.md, paddingBottom: 40 },
-  card: { width: CARD_W, height: CARD_W * 1.3, borderRadius: BorderRadius.lg, overflow: 'hidden', marginBottom: COL_GAP, backgroundColor: Colors.dark.bgSecondary },
+  card: { width: CARD_W, height: CARD_W * 1.3, borderRadius: BorderRadius.lg, overflow: 'hidden', marginBottom: COL_GAP, backgroundColor: t.surface },
   cardImg: { width: '100%', height: '100%' },
-  cardOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.md, minHeight: 44, justifyContent: 'flex-end' },
-  cardName: { ...Typography.label, color: Colors.white },
-  empty: { alignItems: 'center', paddingTop: Spacing['4xl'] },
-  emptyText: { ...Typography.body, color: Colors.dark.textMuted, marginTop: Spacing.md },
-  upgradeBtn: { borderRadius: BorderRadius.xl, overflow: 'hidden', marginTop: Spacing.lg },
-  upgradeGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: Spacing.base },
-  upgradeText: { ...Typography.button, color: Colors.white },
+  cardOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.md, minHeight: 56, justifyContent: 'flex-end' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardName: { ...Typography.label, color: Colors.white, flex: 1 },
+  cardCity: { ...Typography.caption, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  likeBadge: {
+    position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14,
+    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  empty: { alignItems: 'center', paddingTop: Spacing['4xl'], paddingHorizontal: Spacing.xl },
+  emptyText: { ...Typography.body, color: t.textMuted, marginTop: Spacing.md, textAlign: 'center' },
 });

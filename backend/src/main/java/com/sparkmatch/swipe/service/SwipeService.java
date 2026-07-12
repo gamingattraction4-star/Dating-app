@@ -41,6 +41,7 @@ public class SwipeService {
     private final UserProfileRepository profileRepository;
     private final UserPhotoRepository photoRepository;
     private final UserPreferencesRepository preferencesRepository;
+    private final com.sparkmatch.user.repository.UserInterestRepository userInterestRepository;
     private final NotificationService notificationService;
     private final ChatService chatService;
 
@@ -106,6 +107,12 @@ public class SwipeService {
                     .company(profile.getCompany())
                     .school(profile.getSchool())
                     .city(profile.getCity())
+                    .heightCm(profile.getHeightCm())
+                    .workout(profile.getWorkout())
+                    .educationLevel(profile.getEducationLevel())
+                    .pets(profile.getPets())
+                    .zodiac(profile.getZodiac())
+                    .drinking(profile.getDrinking() != null ? profile.getDrinking().name() : null)
                     .verified(user.getIsVerified())
                     .premium(user.getIsPremium())
                     .distanceKm(Math.round(distance * 10.0) / 10.0)
@@ -116,9 +123,65 @@ public class SwipeService {
                             .orderIndex(p.getOrderIndex())
                             .primary(p.getIsPrimary())
                             .build()).collect(Collectors.toList()))
+                    .interests(userInterestRepository.findByUserId(user.getId()).stream()
+                            .map(ui -> ProfileResponse.InterestDto.builder()
+                                    .id(ui.getInterest().getId()).name(ui.getInterest().getName())
+                                    .category(ui.getInterest().getCategory()).icon(ui.getInterest().getIcon()).build())
+                            .collect(Collectors.toList()))
                     .lookingFor(profile.getLookingFor() != null ? profile.getLookingFor().name() : null)
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * Explore / People: browse profiles by shared interest and/or "looking for"
+     * category. Not preference-filtered — this is a directory, not the deck.
+     */
+    @Transactional(readOnly = true)
+    public List<ProfileResponse> getExploreProfiles(Long userId, String interest, String lookingFor, int page, int size) {
+        UserProfile myProfile = profileRepository.findByUserId(userId).orElse(null);
+        String interestFilter = (interest == null || interest.isBlank()) ? null : interest;
+        String lookingForFilter = (lookingFor == null || lookingFor.isBlank()) ? null : lookingFor.toUpperCase();
+
+        List<UserProfile> profiles = profileRepository.findExploreProfiles(
+                userId, interestFilter, lookingForFilter, size, page * size);
+
+        return profiles.stream()
+                .map(p -> mapExploreProfile(p, myProfile))
+                .collect(Collectors.toList());
+    }
+
+    private ProfileResponse mapExploreProfile(UserProfile profile, UserProfile myProfile) {
+        User user = profile.getUser();
+        List<UserPhoto> photos = photoRepository.findByUserIdOrderByOrderIndexAsc(user.getId());
+        List<com.sparkmatch.user.model.UserInterest> interests = userInterestRepository.findByUserId(user.getId());
+
+        double distance = 0;
+        if (myProfile != null && myProfile.getLatitude() != null && profile.getLatitude() != null) {
+            distance = calculateDistance(myProfile.getLatitude(), myProfile.getLongitude(),
+                    profile.getLatitude(), profile.getLongitude());
+        }
+
+        return ProfileResponse.builder()
+                .userId(user.getId())
+                .displayName(profile.getDisplayName())
+                .age(profile.getBirthdate() != null ? Period.between(profile.getBirthdate(), LocalDate.now()).getYears() : null)
+                .gender(profile.getGender() != null ? profile.getGender().name() : null)
+                .bio(profile.getBio())
+                .jobTitle(profile.getJobTitle())
+                .city(profile.getCity())
+                .verified(user.getIsVerified())
+                .distanceKm(Math.round(distance * 10.0) / 10.0)
+                .lookingFor(profile.getLookingFor() != null ? profile.getLookingFor().name() : null)
+                .photos(photos.stream().map(ph -> ProfileResponse.PhotoDto.builder()
+                        .id(ph.getId()).photoUrl(ph.getPhotoUrl()).thumbnailUrl(ph.getThumbnailUrl())
+                        .orderIndex(ph.getOrderIndex()).primary(ph.getIsPrimary()).build())
+                        .collect(Collectors.toList()))
+                .interests(interests.stream().map(ui -> ProfileResponse.InterestDto.builder()
+                        .id(ui.getInterest().getId()).name(ui.getInterest().getName())
+                        .category(ui.getInterest().getCategory()).icon(ui.getInterest().getIcon()).build())
+                        .collect(Collectors.toList()))
+                .build();
     }
 
     /**
@@ -142,21 +205,7 @@ public class SwipeService {
 
         Swipe.SwipeType type = Swipe.SwipeType.valueOf(request.getSwipeType().toUpperCase());
 
-        // Rate limiting
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todaySwipes = swipeRepository.countSwipesSince(userId, todayStart);
-
-        if (!swiper.getIsPremium() && todaySwipes >= dailySwipeLimit) {
-            throw new BadRequestException("Daily swipe limit reached. Upgrade to Premium for unlimited swipes!");
-        }
-
-        if (type == Swipe.SwipeType.SUPER_LIKE) {
-            long todaySuperLikes = swipeRepository.countSuperLikesSince(userId, todayStart);
-            int limit = swiper.getIsPremium() ? premiumSuperLikeLimit : dailySuperLikeLimit;
-            if (todaySuperLikes >= limit) {
-                throw new BadRequestException("Daily super like limit reached");
-            }
-        }
+        // All features are free — no swipe or super-like limits.
 
         // Save swipe
         Swipe swipe = Swipe.builder()
@@ -175,16 +224,12 @@ public class SwipeService {
     }
 
     /**
-     * Undo last swipe (premium feature)
+     * Undo last swipe — free for everyone.
      */
     @Transactional
     public void undoSwipe(Long userId) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-
-        if (!user.getIsPremium()) {
-            throw new BadRequestException("Undo swipe is a premium feature");
-        }
 
         Swipe lastSwipe = swipeRepository.findLastSwipeByUser(userId)
                 .orElseThrow(() -> new BadRequestException("No swipe to undo"));
@@ -263,13 +308,10 @@ public class SwipeService {
      */
     @Transactional(readOnly = true)
     public List<ProfileResponse> getWhoLikedMe(Long userId) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        if (!user.getIsPremium()) {
-            throw new BadRequestException("See who liked you is a premium feature");
-        }
-
+        // Free for everyone — no premium gate.
         List<Swipe> pendingLikes = swipeRepository.findPendingLikesForUser(userId);
 
         return pendingLikes.stream().map(swipe -> {
@@ -343,6 +385,9 @@ public class SwipeService {
                             .build())
                     .build();
         }
+
+        // Not a mutual match yet — tell the liked user someone likes them.
+        notificationService.sendLikeNotification(swipedId, swiperId);
 
         return SwipeResponse.builder().matched(false).build();
     }

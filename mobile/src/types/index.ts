@@ -26,6 +26,14 @@ export interface Profile {
   drinking?: 'NEVER' | 'SOMETIMES' | 'OFTEN';
   smoking?: 'NEVER' | 'SOMETIMES' | 'OFTEN';
   lookingFor?: 'RELATIONSHIP' | 'CASUAL' | 'FRIENDSHIP' | 'NOT_SURE';
+  workout?: string;
+  educationLevel?: string;
+  pets?: string;
+  zodiac?: string;
+  children?: string;
+  religion?: string;
+  languages?: string;
+  instagram?: string;
   profileCompletePct: number;
   verified: boolean;
   premium: boolean;
@@ -65,7 +73,7 @@ export interface Preferences {
   globalMode: boolean;
 }
 
-/** Payload for PUT /users/me — mirrors the backend ProfileUpdateRequest. */
+/** Payload for PUT /users/me. Mirrors the backend ProfileUpdateRequest. */
 export interface ProfileUpdate {
   displayName?: string;
   birthdate?: string; // YYYY-MM-DD
@@ -79,6 +87,14 @@ export interface ProfileUpdate {
   drinking?: string;
   smoking?: string;
   lookingFor?: string;
+  workout?: string;
+  educationLevel?: string;
+  pets?: string;
+  zodiac?: string;
+  children?: string;
+  religion?: string;
+  languages?: string;
+  instagram?: string;
   interestIds?: number[];
 }
 
@@ -90,6 +106,8 @@ export interface AuthResponse {
   email: string;
   displayName?: string;
   profileComplete: boolean;
+  // When true, tokens are absent and the client must verify an emailed OTP first.
+  otpRequired?: boolean;
 }
 
 export interface SwipeResponse {

@@ -1,4 +1,5 @@
 // SparkMatch — User & Profile Service
+import { Platform } from 'react-native';
 import api from './api';
 import { Profile, Interest, Preferences, ApiResponse, ProfileUpdate } from '../types';
 
@@ -44,19 +45,31 @@ export const userService = {
 
   uploadPhoto: async (uri: string, orderIndex: number): Promise<any> => {
     const formData = new FormData();
-    const filename = uri.split('/').pop() || 'photo.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-    formData.append('file', {
-      uri,
-      name: filename,
-      type,
-    } as any);
+    if (Platform.OS === 'web') {
+      // On web, ImagePicker gives a blob:/data: URL. Fetch it into a real Blob
+      // so the browser sends proper multipart bytes (the {uri,name,type} shim
+      // only works on native). Use the blob's own MIME type for a valid filename.
+      const blob = await (await fetch(uri)).blob();
+      const ext = (blob.type && blob.type.split('/')[1]) || 'jpg';
+      formData.append('file', blob, `photo_${Date.now()}.${ext}`);
+    } else {
+      const clean = uri.split('/').pop()?.split('?')[0] || `photo_${Date.now()}.jpg`;
+      const extMatch = /\.(\w+)$/.exec(clean);
+      const type = extMatch ? `image/${extMatch[1].toLowerCase()}` : 'image/jpeg';
+      formData.append('file', { uri, name: clean, type } as any);
+    }
     formData.append('orderIndex', orderIndex.toString());
 
+    // Web: delete Content-Type so the browser sets "multipart/form-data; boundary=…".
+    // Native: an explicit multipart header is required.
+    const headers = Platform.OS === 'web'
+      ? { 'Content-Type': undefined as any }
+      : { 'Content-Type': 'multipart/form-data' };
+
     const response = await api.post('/users/me/photos', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers,
+      transformRequest: (d) => d,
     });
     return response.data.data;
   },

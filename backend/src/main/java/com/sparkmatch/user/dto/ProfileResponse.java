@@ -29,6 +29,14 @@ public class ProfileResponse {
     private String drinking;
     private String smoking;
     private String lookingFor;
+    private String workout;
+    private String educationLevel;
+    private String pets;
+    private String zodiac;
+    private String children;
+    private String religion;
+    private String languages;
+    private String instagram;
     private Integer profileCompletePct;
     private boolean verified;
     private boolean premium;

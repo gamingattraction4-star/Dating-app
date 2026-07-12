@@ -39,5 +39,15 @@ public class ProfileUpdateRequest {
 
     private String lookingFor; // RELATIONSHIP, CASUAL, FRIENDSHIP, NOT_SURE
 
+    // Modern lifestyle fields (all optional)
+    private String workout;
+    private String educationLevel;
+    private String pets;
+    private String zodiac;
+    private String children;
+    private String religion;
+    private String languages;
+    private String instagram;
+
     private List<Long> interestIds;
 }

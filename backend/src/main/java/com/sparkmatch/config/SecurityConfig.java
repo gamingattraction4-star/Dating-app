@@ -52,13 +52,23 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // Comma-separated allowed origins. Default "*" is fine for a mobile app (JWT
+    // is sent in the Authorization header, not cookies). Set CORS_ALLOWED_ORIGINS
+    // to your website domain(s) in production to lock the web surface down.
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:*}")
+    private String allowedOrigins;
+
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
+        java.util.List<String> origins = java.util.Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty()).toList();
+        configuration.setAllowedOriginPatterns(origins.isEmpty() ? java.util.List.of("*") : origins);
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(java.util.List.of("Authorization", "Cache-Control", "Content-Type"));
-        configuration.setAllowCredentials(true);
+        // Only allow credentials when origins are explicitly restricted (not "*").
+        boolean wildcard = origins.isEmpty() || origins.contains("*");
+        configuration.setAllowCredentials(!wildcard);
         configuration.setMaxAge(3600L);
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

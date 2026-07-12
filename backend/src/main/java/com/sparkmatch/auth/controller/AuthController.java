@@ -20,12 +20,26 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Registration successful", response));
+                .body(ApiResponse.success("Verification code sent to your email", response));
+    }
+
+    /** Step 2 of signup: verify the emailed OTP to activate the account. */
+    @PostMapping("/verify-registration")
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyRegistration(@Valid @RequestBody OtpVerifyRequest request) {
+        AuthResponse response = authService.verifyRegistrationOtp(request.getIdentifier(), request.getOtp());
+        return ResponseEntity.ok(ApiResponse.success("Account verified", response));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Verification code sent to your email", response));
+    }
+
+    /** Step 2 of login: verify the emailed OTP to receive tokens. */
+    @PostMapping("/verify-login")
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyLogin(@Valid @RequestBody VerifyOtpLoginRequest request) {
+        AuthResponse response = authService.verifyLoginOtp(request.getEmailOrPhone(), request.getOtp(), request.getDevice());
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 

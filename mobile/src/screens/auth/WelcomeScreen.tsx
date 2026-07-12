@@ -13,13 +13,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
-
-const comingSoon = (provider: string) =>
-  Alert.alert(`${provider} Sign-In`, 'Social sign-in is coming soon. Please use email for now.');
+import { useGoogleAuth } from '../../services/googleAuth';
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen({ navigation }: any) {
+  const { signInWithGoogle } = useGoogleAuth();
+  const appleSoon = () => Alert.alert('Apple Sign-In', 'Apple sign-in is coming soon. Please continue with email or Google.');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -183,10 +183,10 @@ export default function WelcomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.socialButtons}>
-          <TouchableOpacity style={styles.socialButton} activeOpacity={0.7} onPress={() => comingSoon('Google')}>
+          <TouchableOpacity style={styles.socialButton} activeOpacity={0.7} onPress={signInWithGoogle}>
             <Ionicons name="logo-google" size={22} color={Colors.google} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialButton, { marginLeft: Spacing.md }]} activeOpacity={0.7} onPress={() => comingSoon('Apple')}>
+          <TouchableOpacity style={[styles.socialButton, { marginLeft: Spacing.md }]} activeOpacity={0.7} onPress={appleSoon}>
             <Ionicons name="logo-apple" size={22} color={Colors.white} />
           </TouchableOpacity>
         </View>

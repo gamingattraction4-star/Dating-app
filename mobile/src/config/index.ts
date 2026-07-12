@@ -18,6 +18,14 @@ function resolveDevHost(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envUrl) return envUrl.replace(/\/$/, '');
 
+  // 1b. Running in a desktop browser (Expo web) — talk to localhost directly.
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      return `http://${window.location.hostname}:${DEV_PORT}`;
+    }
+    return `http://localhost:${DEV_PORT}`;
+  }
+
   // 2. Derive the LAN IP from the Expo dev server URL (e.g. 192.168.1.5:8081).
   const hostUri =
     Constants.expoConfig?.hostUri ||
@@ -50,6 +58,19 @@ export const API_BASE_URL = `${HOST}/api`;
 /** WebSocket (STOMP) endpoint, e.g. ws://192.168.1.5:8080/ws/chat */
 export const WS_URL = `${HOST.replace(/^http/, 'ws')}/ws/chat`;
 
+/**
+ * Resolves a photo URL returned by the backend. Uploaded photos come back as a
+ * server-relative path (e.g. "/photos/2/abc.jpg"); prepend the host so <Image>
+ * can load them. Absolute URLs (http/https, or picsum/pravatar seeds) pass
+ * through unchanged.
+ */
+export function resolvePhotoUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${HOST}${url}`;
+  return url;
+}
+
 export const Config = {
   HOST,
   API_BASE_URL,
@@ -59,6 +80,20 @@ export const Config = {
     email: 'arjun@demo.com',
     password: 'Password123',
   },
+  /**
+   * Google OAuth client IDs. Leave empty to keep the Google button in
+   * "configure to enable" mode. Fill from Google Cloud Console when ready.
+   *   - webClientId: for Expo Go / web
+   *   - androidClientId / iosClientId: for built apps
+   */
+  google: {
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
+  },
 };
+
+export const isGoogleConfigured =
+  !!Config.google.webClientId || !!Config.google.androidClientId || !!Config.google.iosClientId;
 
 export default Config;

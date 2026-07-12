@@ -71,6 +71,31 @@ public class UserProfile {
     @Column(name = "looking_for")
     private LookingFor lookingFor;
 
+    // ---- Modern lifestyle fields (all optional, free text/enum-like Strings) ----
+    @Column(name = "workout", length = 40)
+    private String workout;          // Everyday, Often, Sometimes, Never
+
+    @Column(name = "education_level", length = 60)
+    private String educationLevel;   // High school, Undergrad, Postgrad, PhD
+
+    @Column(name = "pets", length = 40)
+    private String pets;             // Dog, Cat, None, Other
+
+    @Column(name = "zodiac", length = 20)
+    private String zodiac;           // Aries...Pisces
+
+    @Column(name = "children", length = 40)
+    private String children;         // Have & want more, Want someday, Don't want, Not sure
+
+    @Column(name = "religion", length = 40)
+    private String religion;
+
+    @Column(name = "languages", length = 200)
+    private String languages;        // comma-separated
+
+    @Column(name = "instagram", length = 60)
+    private String instagram;
+
     @Column(name = "profile_complete_pct")
     @Builder.Default
     private Integer profileCompletePct = 0;

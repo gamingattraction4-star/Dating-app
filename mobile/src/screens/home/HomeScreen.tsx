@@ -117,11 +117,6 @@ export default function HomeScreen() {
   };
 
   const handleUndo = async () => {
-    if (!myProfile?.premium) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      navigation.navigate('Settings');
-      return;
-    }
     if (!lastSwipe.current) return;
     try {
       await swipeService.undoSwipe();
@@ -171,7 +166,13 @@ export default function HomeScreen() {
     const inner = (
       <>
         <Image source={photo ? { uri: photo } : require('../../../assets/icon.png')} style={styles.cardImage} />
-        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.cardGradient}>
+        {profile.distanceKm != null && (
+          <View style={styles.distanceBadge}>
+            <Ionicons name="location" size={13} color={Colors.white} />
+            <Text style={styles.distanceBadgeText}>{profile.distanceKm} km away</Text>
+          </View>
+        )}
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.9)']} style={styles.cardGradient}>
           <View style={styles.cardContent}>
             <View style={styles.nameRow}>
               <Text style={styles.cardName}>{profile.displayName}{profile.age ? `, ${profile.age}` : ''}</Text>
@@ -190,6 +191,14 @@ export default function HomeScreen() {
               </View>
             )}
             {!!profile.bio && <Text style={styles.bio} numberOfLines={2}>{profile.bio}</Text>}
+            {(!!profile.heightCm || !!profile.workout || !!profile.pets || !!profile.educationLevel) && (
+              <View style={styles.lifestyleRow}>
+                {!!profile.heightCm && <LifeChip icon="resize-outline" text={`${profile.heightCm} cm`} />}
+                {!!profile.workout && <LifeChip icon="barbell-outline" text={profile.workout} />}
+                {!!profile.pets && profile.pets !== 'None' && <LifeChip icon="paw-outline" text={profile.pets} />}
+                {!!profile.educationLevel && <LifeChip icon="school-outline" text={profile.educationLevel} />}
+              </View>
+            )}
             {!!profile.interests?.length && (
               <View style={styles.interestRow}>
                 {profile.interests.slice(0, 4).map((interest) => (
@@ -277,20 +286,24 @@ export default function HomeScreen() {
 
       {!noMoreCards && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.actionBtn, styles.smallBtn, !canUndo && { opacity: 0.4 }]} onPress={handleUndo}>
-            <Ionicons name="arrow-undo" size={22} color={Colors.neon.gold} />
+          <TouchableOpacity style={[styles.actionBtn, styles.smallBtn, !canUndo && { opacity: 0.35 }]} onPress={handleUndo} activeOpacity={0.8}>
+            <Ionicons name="arrow-undo" size={20} color={Colors.neon.gold} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.largeBtn]} onPress={() => forceSwipe('DISLIKE')}>
-            <Ionicons name="close" size={36} color={Colors.dislike} />
+          <TouchableOpacity style={[styles.actionBtn, styles.largeBtn]} onPress={() => forceSwipe('DISLIKE')} activeOpacity={0.85}>
+            <Ionicons name="close" size={34} color={Colors.dislike} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.mediumBtn]} onPress={() => forceSwipe('SUPER_LIKE')}>
-            <Ionicons name="star" size={26} color={Colors.superLike} />
+          <TouchableOpacity onPress={() => forceSwipe('SUPER_LIKE')} activeOpacity={0.85}>
+            <LinearGradient colors={['#1EC6FF', '#3B82F6']} style={[styles.actionBtn, styles.mediumBtn, styles.gradBtn]}>
+              <Ionicons name="star" size={24} color={Colors.white} />
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.largeBtn]} onPress={() => forceSwipe('LIKE')}>
-            <Ionicons name="heart" size={36} color={Colors.like} />
+          <TouchableOpacity onPress={() => forceSwipe('LIKE')} activeOpacity={0.85}>
+            <LinearGradient colors={['#39DA8A', '#2FB574']} style={[styles.actionBtn, styles.largeBtn, styles.gradBtn]}>
+              <Ionicons name="heart" size={34} color={Colors.white} />
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.smallBtn]} onPress={handleBoost}>
-            {boosting ? <ActivityIndicator size="small" color={Colors.boost} /> : <Ionicons name="flash" size={22} color={Colors.boost} />}
+          <TouchableOpacity style={[styles.actionBtn, styles.smallBtn]} onPress={handleBoost} activeOpacity={0.8}>
+            {boosting ? <ActivityIndicator size="small" color={Colors.boost} /> : <Ionicons name="flash" size={20} color={Colors.boost} />}
           </TouchableOpacity>
         </View>
       )}
@@ -324,6 +337,16 @@ export default function HomeScreen() {
   );
 }
 
+// Small lifestyle chip shown on the swipe card (height, workout, pets…).
+function LifeChip({ icon, text }: { icon: any; text: string }) {
+  return (
+    <View style={styles.lifeChip}>
+      <Ionicons name={icon} size={12} color="rgba(255,255,255,0.95)" />
+      <Text style={styles.lifeChipText}>{text}</Text>
+    </View>
+  );
+}
+
 // Lazy import to avoid circular deps at module load.
 async function swipeServiceBoost() {
   const { userService } = await import('../../services/userService');
@@ -347,30 +370,39 @@ const styles = StyleSheet.create({
   filterButton: { width: 40, height: 40, borderRadius: 14, backgroundColor: Colors.dark.bgSecondary, justifyContent: 'center', alignItems: 'center' },
   cardContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.base },
   card: {
-    position: 'absolute', width: SCREEN_WIDTH - 32, height: SCREEN_HEIGHT * 0.58,
-    borderRadius: BorderRadius['2xl'], overflow: 'hidden', backgroundColor: Colors.dark.bgSecondary, ...Shadow.lg,
+    position: 'absolute', width: SCREEN_WIDTH - 28, height: SCREEN_HEIGHT * 0.60,
+    borderRadius: 28, overflow: 'hidden', backgroundColor: Colors.dark.bgSecondary, ...Shadow.lg,
   },
   cardImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  cardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', justifyContent: 'flex-end', padding: Spacing.lg },
+  cardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%', justifyContent: 'flex-end', padding: Spacing.xl },
   cardContent: {},
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  cardName: { ...Typography.h2, color: Colors.white },
-  infoRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  infoText: { ...Typography.bodySmall, color: 'rgba(255,255,255,0.85)', marginLeft: 6 },
-  bio: { ...Typography.bodySmall, color: 'rgba(255,255,255,0.75)', marginTop: Spacing.sm },
-  interestRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: Spacing.sm, gap: 6 },
-  interestChip: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: BorderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  interestText: { ...Typography.caption, color: Colors.white },
-  stamp: { position: 'absolute', top: 50, zIndex: 10, padding: 10, borderWidth: 4, borderRadius: 12, transform: [{ rotate: '-20deg' }] },
+  cardName: { ...Typography.h1, fontSize: 30, color: Colors.white },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
+  infoText: { ...Typography.body, color: 'rgba(255,255,255,0.92)', marginLeft: 6 },
+  bio: { ...Typography.bodySmall, color: 'rgba(255,255,255,0.8)', marginTop: Spacing.sm },
+  lifestyleRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: Spacing.md, gap: 7 },
+  lifeChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: BorderRadius.full, paddingHorizontal: 10, paddingVertical: 5 },
+  lifeChipText: { ...Typography.caption, color: Colors.white, fontWeight: '600' },
+  interestRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 7, gap: 7 },
+  interestChip: { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: BorderRadius.full, paddingHorizontal: 12, paddingVertical: 6 },
+  interestText: { ...Typography.caption, color: Colors.white, fontWeight: '600' },
+  distanceBadge: {
+    position: 'absolute', top: 16, left: 16, flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: BorderRadius.full, paddingHorizontal: 12, paddingVertical: 6,
+  },
+  distanceBadgeText: { ...Typography.caption, color: Colors.white, fontWeight: '600' },
+  stamp: { position: 'absolute', top: 46, zIndex: 10, padding: 10, borderWidth: 4, borderRadius: 14, transform: [{ rotate: '-20deg' }] },
   likeStamp: { left: 24 },
   nopeStamp: { right: 24, transform: [{ rotate: '20deg' }] },
   superStamp: { alignSelf: 'center', top: '42%', transform: [{ rotate: '-12deg' }] },
-  stampText: { ...Typography.h1, fontSize: 42, fontWeight: '800' },
-  actionButtons: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 30, paddingHorizontal: Spacing.xl, gap: 12 },
-  actionBtn: { justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.dark.bgSecondary, borderWidth: 1, borderColor: Colors.dark.border, ...Shadow.md },
-  smallBtn: { width: 48, height: 48, borderRadius: 24 },
-  mediumBtn: { width: 56, height: 56, borderRadius: 28 },
-  largeBtn: { width: 64, height: 64, borderRadius: 32 },
+  stampText: { ...Typography.h1, fontSize: 44, fontWeight: '800', letterSpacing: 2 },
+  actionButtons: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 26, paddingTop: Spacing.sm, paddingHorizontal: Spacing.xl, gap: 16 },
+  actionBtn: { justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.white, ...Shadow.md },
+  gradBtn: { backgroundColor: 'transparent' },
+  smallBtn: { width: 46, height: 46, borderRadius: 23 },
+  mediumBtn: { width: 54, height: 54, borderRadius: 27 },
+  largeBtn: { width: 66, height: 66, borderRadius: 33 },
   emptyState: { alignItems: 'center', paddingHorizontal: Spacing.xl },
   emptyTitle: { ...Typography.h3, color: Colors.dark.textSecondary, marginTop: Spacing.lg },
   emptySubtitle: { ...Typography.body, color: Colors.dark.textMuted, marginTop: Spacing.sm, textAlign: 'center' },

@@ -39,6 +39,7 @@ public class ChatService {
     private final UserProfileRepository profileRepository;
     private final UserPhotoRepository photoRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.sparkmatch.notification.service.NotificationService notificationService;
 
     /**
      * Get all conversations for a user
@@ -138,6 +139,9 @@ public class ChatService {
                 "/queue/messages",
                 dto
         );
+
+        // Persist + push a "new message" notification to the recipient.
+        notificationService.sendMessageNotification(otherUserId, dto.getSenderName(), conv.getId());
 
         log.debug("Message sent in conversation {} by user {}", conv.getId(), userId);
 

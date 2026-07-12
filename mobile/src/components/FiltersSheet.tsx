@@ -1,6 +1,7 @@
 // SparkMatch — Discovery Filters bottom sheet
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme';
@@ -55,6 +56,7 @@ export default function FiltersSheet({ visible, onClose, onApply }: Props) {
         maxDistanceKm: prefs.maxDistanceKm,
         genderPreference: prefs.genderPreference,
         globalMode: prefs.globalMode,
+        showMeOnApp: prefs.showMeOnApp,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onApply();
@@ -98,7 +100,7 @@ export default function FiltersSheet({ visible, onClose, onApply }: Props) {
                 })}
               </View>
 
-              <Stepper label="Age range" value={`${prefs.minAge} – ${prefs.maxAge}`}>
+              <Stepper label="Age range" value={`${prefs.minAge} to ${prefs.maxAge}`}>
                 <View style={styles.dualStepper}>
                   <MiniStepper label="Min" onDec={() => step('minAge', -1)} onInc={() => step('minAge', 1)} value={prefs.minAge} />
                   <MiniStepper label="Max" onDec={() => step('maxAge', -1)} onInc={() => step('maxAge', 1)} value={prefs.maxAge} />
@@ -121,19 +123,39 @@ export default function FiltersSheet({ visible, onClose, onApply }: Props) {
                 onPress={() => { Haptics.selectionAsync(); setPrefs((p) => ({ ...p, globalMode: !p.globalMode })); }}
                 activeOpacity={0.7}
               >
-                <View>
-                  <Text style={styles.label}>Global mode</Text>
-                  <Text style={styles.hint}>Match with people anywhere</Text>
+                <View style={styles.rowLeft}>
+                  <View style={[styles.rowIcon, { backgroundColor: 'rgba(59,130,246,0.15)' }]}>
+                    <Ionicons name="earth" size={18} color={Colors.neon.blue} />
+                  </View>
+                  <View>
+                    <Text style={styles.label}>Global mode</Text>
+                    <Text style={styles.hint}>Match with people anywhere</Text>
+                  </View>
                 </View>
-                <Ionicons
-                  name={prefs.globalMode ? 'toggle' : 'toggle-outline'}
-                  size={40}
-                  color={prefs.globalMode ? Colors.primary : Colors.dark.textMuted}
-                />
+                <Ionicons name={prefs.globalMode ? 'toggle' : 'toggle-outline'} size={42} color={prefs.globalMode ? Colors.primary : Colors.dark.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.globalRow}
+                onPress={() => { Haptics.selectionAsync(); setPrefs((p) => ({ ...p, showMeOnApp: !p.showMeOnApp })); }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.rowIcon, { backgroundColor: 'rgba(16,185,129,0.15)' }]}>
+                    <Ionicons name="eye" size={18} color={Colors.neon.green} />
+                  </View>
+                  <View>
+                    <Text style={styles.label}>Show me on SparkMatch</Text>
+                    <Text style={styles.hint}>Turn off to hide from Discover</Text>
+                  </View>
+                </View>
+                <Ionicons name={prefs.showMeOnApp ? 'toggle' : 'toggle-outline'} size={42} color={prefs.showMeOnApp ? Colors.primary : Colors.dark.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.applyBtn} onPress={apply} disabled={saving} activeOpacity={0.85}>
-                <Text style={styles.applyText}>{saving ? 'Applying…' : 'Apply filters'}</Text>
+                <LinearGradient colors={[Colors.primary, Colors.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.applyGradient}>
+                  <Text style={styles.applyText}>{saving ? 'Applying…' : 'Apply filters'}</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </>
           )}
@@ -192,6 +214,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   circleBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.dark.surfaceLight, justifyContent: 'center', alignItems: 'center' },
   globalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg },
-  applyBtn: { backgroundColor: Colors.primary, borderRadius: BorderRadius.xl, paddingVertical: Spacing.base, alignItems: 'center', marginTop: Spacing.sm },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1 },
+  rowIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  applyBtn: { borderRadius: BorderRadius.xl, overflow: 'hidden', marginTop: Spacing.sm },
+  applyGradient: { paddingVertical: Spacing.base, alignItems: 'center' },
   applyText: { ...Typography.button, color: Colors.white },
 });

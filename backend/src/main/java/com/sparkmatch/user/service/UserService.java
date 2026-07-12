@@ -75,6 +75,14 @@ public class UserService {
         if (request.getDrinking() != null) profile.setDrinking(UserProfile.LifestyleChoice.valueOf(request.getDrinking()));
         if (request.getSmoking() != null) profile.setSmoking(UserProfile.LifestyleChoice.valueOf(request.getSmoking()));
         if (request.getLookingFor() != null) profile.setLookingFor(UserProfile.LookingFor.valueOf(request.getLookingFor()));
+        if (request.getWorkout() != null) profile.setWorkout(request.getWorkout());
+        if (request.getEducationLevel() != null) profile.setEducationLevel(request.getEducationLevel());
+        if (request.getPets() != null) profile.setPets(request.getPets());
+        if (request.getZodiac() != null) profile.setZodiac(request.getZodiac());
+        if (request.getChildren() != null) profile.setChildren(request.getChildren());
+        if (request.getReligion() != null) profile.setReligion(request.getReligion());
+        if (request.getLanguages() != null) profile.setLanguages(request.getLanguages());
+        if (request.getInstagram() != null) profile.setInstagram(request.getInstagram());
 
         // Calculate profile completeness
         profile.setProfileCompletePct(calculateProfileCompletion(profile));
@@ -199,6 +207,14 @@ public class UserService {
                 .drinking(profile.getDrinking() != null ? profile.getDrinking().name() : null)
                 .smoking(profile.getSmoking() != null ? profile.getSmoking().name() : null)
                 .lookingFor(profile.getLookingFor() != null ? profile.getLookingFor().name() : null)
+                .workout(profile.getWorkout())
+                .educationLevel(profile.getEducationLevel())
+                .pets(profile.getPets())
+                .zodiac(profile.getZodiac())
+                .children(profile.getChildren())
+                .religion(profile.getReligion())
+                .languages(profile.getLanguages())
+                .instagram(profile.getInstagram())
                 .profileCompletePct(profile.getProfileCompletePct())
                 .verified(user.getIsVerified())
                 .premium(user.getIsPremium())

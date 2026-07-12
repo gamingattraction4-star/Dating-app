@@ -29,6 +29,19 @@ public class SwipeController {
         return ResponseEntity.ok(ApiResponse.success(profiles));
     }
 
+    /** People / Explore — browse by interest and/or "looking for" category. */
+    @GetMapping("/explore")
+    public ResponseEntity<ApiResponse<List<ProfileResponse>>> explore(
+            Authentication auth,
+            @RequestParam(required = false) String interest,
+            @RequestParam(required = false) String lookingFor,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size) {
+        Long userId = (Long) auth.getPrincipal();
+        List<ProfileResponse> profiles = swipeService.getExploreProfiles(userId, interest, lookingFor, page, size);
+        return ResponseEntity.ok(ApiResponse.success(profiles));
+    }
+
     @PostMapping("/swipes")
     public ResponseEntity<ApiResponse<SwipeResponse>> swipe(
             Authentication auth,

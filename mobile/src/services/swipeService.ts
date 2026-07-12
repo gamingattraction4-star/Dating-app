@@ -10,6 +10,14 @@ export const swipeService = {
     return response.data.data;
   },
 
+  /** People / Explore — browse by interest name and/or lookingFor category. */
+  explore: async (opts: { interest?: string; lookingFor?: string; page?: number; size?: number } = {}): Promise<Profile[]> => {
+    const response = await api.get<ApiResponse<Profile[]>>('/explore', {
+      params: { interest: opts.interest, lookingFor: opts.lookingFor, page: opts.page ?? 0, size: opts.size ?? 30 },
+    });
+    return response.data.data;
+  },
+
   swipe: async (targetUserId: number, swipeType: 'LIKE' | 'DISLIKE' | 'SUPER_LIKE'): Promise<SwipeResponse> => {
     const response = await api.post<ApiResponse<SwipeResponse>>('/swipes', {
       targetUserId,

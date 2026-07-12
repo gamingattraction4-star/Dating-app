@@ -15,15 +15,29 @@ export interface TypingEvent {
   typing: boolean;
 }
 
+export interface AppNotification {
+  id: number;
+  type: 'MATCH' | 'MESSAGE' | 'LIKE' | 'SUPER_LIKE' | 'PROFILE_VIEW' | 'SYSTEM';
+  title: string;
+  body: string;
+  actionType?: string;
+  actionId?: number;
+  read?: boolean;
+  createdAt?: string;
+}
+
 type MessageHandler = (msg: ChatMessage) => void;
 type TypingHandler = (evt: TypingEvent) => void;
+type NotificationHandler = (n: AppNotification) => void;
 
 class ChatSocket {
   private client: Client | null = null;
   private messageSub: StompSubscription | null = null;
   private typingSub: StompSubscription | null = null;
+  private notifSub: StompSubscription | null = null;
   private messageHandlers = new Set<MessageHandler>();
   private typingHandlers = new Set<TypingHandler>();
+  private notifHandlers = new Set<NotificationHandler>();
   private connected = false;
 
   isConnected() {
@@ -66,6 +80,14 @@ class ChatSocket {
           /* ignore */
         }
       });
+      this.notifSub = this.client!.subscribe('/user/queue/notifications', (frame: IMessage) => {
+        try {
+          const n = JSON.parse(frame.body) as AppNotification;
+          this.notifHandlers.forEach((h) => h(n));
+        } catch {
+          /* ignore */
+        }
+      });
     };
 
     this.client.onStompError = () => { this.connected = false; };
@@ -77,13 +99,16 @@ class ChatSocket {
   disconnect() {
     this.messageSub?.unsubscribe();
     this.typingSub?.unsubscribe();
+    this.notifSub?.unsubscribe();
     this.messageSub = null;
     this.typingSub = null;
+    this.notifSub = null;
     this.client?.deactivate();
     this.client = null;
     this.connected = false;
     this.messageHandlers.clear();
     this.typingHandlers.clear();
+    this.notifHandlers.clear();
   }
 
   onMessage(handler: MessageHandler): () => void {
@@ -94,6 +119,11 @@ class ChatSocket {
   onTyping(handler: TypingHandler): () => void {
     this.typingHandlers.add(handler);
     return () => this.typingHandlers.delete(handler);
+  }
+
+  onNotification(handler: NotificationHandler): () => void {
+    this.notifHandlers.add(handler);
+    return () => this.notifHandlers.delete(handler);
   }
 
   sendMessage(conversationId: number, content: string) {

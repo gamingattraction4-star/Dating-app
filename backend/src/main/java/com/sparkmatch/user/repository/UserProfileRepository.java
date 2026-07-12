@@ -53,4 +53,33 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             @Param("limit") int limit,
             @Param("offset") int offset
     );
+
+    /**
+     * Browse/Explore: all active users the requester can see, optionally filtered
+     * by a shared interest name and/or a "looking for" category. Excludes self and
+     * blocked users but — unlike discovery — does NOT hide people you've swiped, so
+     * People page always has something to browse.
+     */
+    @Query(value = """
+        SELECT DISTINCT p.* FROM user_profiles p
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN user_interests ui ON ui.user_id = u.id
+        LEFT JOIN interests i ON i.id = ui.interest_id
+        WHERE u.status = 'ACTIVE'
+          AND u.deleted_at IS NULL
+          AND u.id != :userId
+          AND u.id NOT IN (SELECT b.blocked_id FROM user_blocks b WHERE b.blocker_id = :userId)
+          AND u.id NOT IN (SELECT b.blocker_id FROM user_blocks b WHERE b.blocked_id = :userId)
+          AND (:interest IS NULL OR i.name = :interest)
+          AND (:lookingFor IS NULL OR p.looking_for = :lookingFor)
+        ORDER BY p.updated_at DESC
+        LIMIT :limit OFFSET :offset
+        """, nativeQuery = true)
+    List<UserProfile> findExploreProfiles(
+            @Param("userId") Long userId,
+            @Param("interest") String interest,
+            @Param("lookingFor") String lookingFor,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
 }

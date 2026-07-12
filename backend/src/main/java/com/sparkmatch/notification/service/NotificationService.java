@@ -24,6 +24,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ExpoPushService expoPushService;
 
     /**
      * Create and send a notification (persisted + pushed via WebSocket)
@@ -47,11 +48,23 @@ public class NotificationService {
 
         NotificationDto dto = mapToDto(notification);
 
-        // Push via WebSocket
+        // 1. In-app realtime push via WebSocket (app open).
         messagingTemplate.convertAndSendToUser(
                 userId.toString(),
                 "/queue/notifications",
                 dto
+        );
+
+        // 2. Device push via Expo (app closed / phone locked). Best-effort.
+        expoPushService.send(
+                user.getPushToken(),
+                title,
+                body,
+                java.util.Map.of(
+                        "type", type.name(),
+                        "actionType", actionType == null ? "" : actionType,
+                        "actionId", actionId == null ? 0 : actionId
+                )
         );
 
         log.debug("Notification sent to userId={}: {}", userId, title);
@@ -102,6 +115,15 @@ public class NotificationService {
 
     public long getUnreadCount(Long userId) {
         return notificationRepository.countUnread(userId);
+    }
+
+    /** Save (or clear when null/blank) the user's Expo push token. */
+    @Transactional
+    public void savePushToken(Long userId, String token) {
+        userRepository.findById(userId).ifPresent(u -> {
+            u.setPushToken(token == null || token.isBlank() ? null : token);
+            userRepository.save(u);
+        });
     }
 
     @Transactional

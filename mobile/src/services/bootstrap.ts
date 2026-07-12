@@ -5,9 +5,15 @@
 import { userService } from './userService';
 import { useAppStore } from '../store/appStore';
 import { chatSocket } from './chatSocket';
+import { registerForPush } from './pushService';
+import { requestAndSaveLocation } from './locationService';
 
 export async function bootstrapUser(): Promise<void> {
   chatSocket.connect();
+  // Register for device push notifications (no-op on web / simulator).
+  registerForPush();
+  // Ask for location so nearby discovery works (no-op if denied).
+  requestAndSaveLocation();
   try {
     const profile = await userService.getMyProfile();
     useAppStore.getState().setMyProfile(profile);

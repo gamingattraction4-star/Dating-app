@@ -1,6 +1,8 @@
 package com.sparkmatch.auth.service;
 
+import com.sparkmatch.common.email.EmailService;
 import com.sparkmatch.common.exception.BadRequestException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,7 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class OtpService {
+
+    private final EmailService emailService;
 
     @Value("${app.otp.expiry-minutes:5}")
     private int otpExpiryMinutes;
@@ -46,9 +51,10 @@ public class OtpService {
     private void deliverOtp(String identifier, String otp, String purpose) {
         boolean isEmail = identifier != null && identifier.contains("@");
         log.info("📩 OTP for {} ({}) via {}: {}", identifier, purpose, isEmail ? "EMAIL" : "SMS", otp);
-        // Production integration point:
-        //   if (isEmail) emailClient.sendOtp(identifier, otp);
-        //   else smsClient.sendOtp(identifier, otp);
+        if (isEmail) {
+            emailService.sendOtp(identifier, otp, purpose);
+        }
+        // SMS delivery (Twilio etc.) would go here for phone identifiers.
     }
 
     public boolean verifyOtp(String identifier, String otp) {

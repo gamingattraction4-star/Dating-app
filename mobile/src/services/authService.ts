@@ -3,6 +3,7 @@ import api from './api';
 import { AuthResponse, ApiResponse } from '../types';
 
 export const authService = {
+  // Step 1: creates the account and emails a verification OTP (otpRequired=true).
   register: async (data: {
     email: string;
     password: string;
@@ -13,8 +14,21 @@ export const authService = {
     return response.data.data;
   },
 
+  // Step 2 of signup: verify the emailed OTP -> returns tokens.
+  verifyRegistration: async (identifier: string, otp: string): Promise<AuthResponse> => {
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/verify-registration', { identifier, otp });
+    return response.data.data;
+  },
+
+  // Step 1 of login: verify password, emails an OTP (otpRequired=true).
   login: async (data: { emailOrPhone: string; password: string }): Promise<AuthResponse> => {
     const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
+    return response.data.data;
+  },
+
+  // Step 2 of login: verify the emailed OTP -> returns tokens.
+  verifyLogin: async (emailOrPhone: string, otp: string, device?: string): Promise<AuthResponse> => {
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/verify-login', { emailOrPhone, otp, device });
     return response.data.data;
   },
 

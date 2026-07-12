@@ -10,14 +10,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import { Colors } from '../theme';
+import NotificationBanner from '../components/NotificationBanner';
 
 // Screens
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import OtpScreen from '../screens/auth/OtpScreen';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
 import HomeScreen from '../screens/home/HomeScreen';
+import ExploreScreen from '../screens/explore/ExploreScreen';
 import MatchesScreen from '../screens/matches/MatchesScreen';
 import ChatListScreen from '../screens/chat/ChatListScreen';
 import ChatScreen from '../screens/chat/ChatScreen';
@@ -25,7 +28,8 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import LikesScreen from '../screens/likes/LikesScreen';
-import PremiumScreen from '../screens/premium/PremiumScreen';
+import HelpScreen from '../screens/legal/HelpScreen';
+import PrivacyScreen from '../screens/legal/PrivacyScreen';
 
 // Types
 export type AuthStackParamList = {
@@ -33,12 +37,14 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: { identifier?: string } | undefined;
+  Otp: { mode: 'REGISTER' | 'LOGIN'; email?: string; emailOrPhone?: string };
   ProfileSetup: undefined;
 };
 
 export type MainTabParamList = {
   Home: undefined;
   Matches: undefined;
+  Explore: undefined;
   Chat: undefined;
   Profile: undefined;
 };
@@ -49,7 +55,8 @@ export type RootStackParamList = {
   Settings: undefined;
   EditProfile: undefined;
   Likes: undefined;
-  Premium: undefined;
+  Help: undefined;
+  Privacy: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -69,6 +76,7 @@ function AuthNavigator() {
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="Otp" component={OtpScreen} />
     </AuthStack.Navigator>
   );
 }
@@ -103,6 +111,9 @@ function MainTabNavigator() {
             case 'Home':
               iconName = focused ? 'flame' : 'flame-outline';
               break;
+            case 'Explore':
+              iconName = focused ? 'compass' : 'compass-outline';
+              break;
             case 'Matches':
               iconName = focused ? 'heart' : 'heart-outline';
               break;
@@ -126,6 +137,7 @@ function MainTabNavigator() {
     >
       <MainTab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Discover' }} />
       <MainTab.Screen name="Matches" component={MatchesScreen} />
+      <MainTab.Screen name="Explore" component={ExploreScreen} options={{ tabBarLabel: 'People' }} />
       <MainTab.Screen name="Chat" component={ChatListScreen} options={{ tabBarLabel: 'Messages' }} />
       <MainTab.Screen name="Profile" component={ProfileScreen} />
     </MainTab.Navigator>
@@ -170,11 +182,8 @@ function RootNavigator() {
         }}
       />
       <RootStack.Screen name="Likes" component={LikesScreen} options={{ animation: 'slide_from_right' }} />
-      <RootStack.Screen
-        name="Premium"
-        component={PremiumScreen}
-        options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
-      />
+      <RootStack.Screen name="Help" component={HelpScreen} options={{ animation: 'slide_from_right', headerShown: true, headerTitle: 'Help & Support', headerStyle: { backgroundColor: theme.bg }, headerTintColor: theme.text }} />
+      <RootStack.Screen name="Privacy" component={PrivacyScreen} options={{ animation: 'slide_from_right', headerShown: true, headerTitle: 'Privacy Policy', headerStyle: { backgroundColor: theme.bg }, headerTintColor: theme.text }} />
     </RootStack.Navigator>
   );
 }
@@ -224,6 +233,8 @@ export default function AppNavigator() {
       ) : (
         <RootNavigator />
       )}
+      {/* In-app realtime notification toast (only when signed in). */}
+      {isAuthenticated && profileComplete && <NotificationBanner />}
     </NavigationContainer>
   );
 }

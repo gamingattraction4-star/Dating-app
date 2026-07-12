@@ -60,11 +60,13 @@ export default function MatchesScreen({ navigation }: any) {
         activeOpacity={0.85}
         onPress={() => convo && openChat(convo.id, item.displayName, item.photoUrl)}
       >
-        <Image source={item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png')} style={styles.matchPhoto} />
-        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.matchOverlay}>
-          <Text style={styles.matchName} numberOfLines={1}>{item.displayName}</Text>
-          {item.verified && <Ionicons name="checkmark-circle" size={14} color={Colors.verified} />}
+        <LinearGradient colors={[Colors.primary, Colors.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.matchRing}>
+          <Image source={item.photoUrl ? { uri: item.photoUrl } : require('../../../assets/icon.png')} style={styles.matchPhoto} />
         </LinearGradient>
+        <View style={styles.matchNameRow}>
+          <Text style={styles.matchName} numberOfLines={1}>{item.displayName}</Text>
+          {item.verified && <Ionicons name="checkmark-circle" size={12} color={Colors.verified} />}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -149,11 +151,12 @@ const makeStyles = (t: ActiveTheme) => StyleSheet.create({
   matchCountText: { ...Typography.labelSmall, color: Colors.white },
   section: { paddingTop: Spacing.sm },
   sectionTitle: { ...Typography.label, color: t.textSecondary, paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
-  matchesList: { paddingHorizontal: Spacing.xl, gap: Spacing.md },
-  matchCard: { width: 100, height: 140, borderRadius: BorderRadius.lg, overflow: 'hidden', ...Shadow.md, backgroundColor: t.surface },
-  matchPhoto: { width: '100%', height: '100%' },
-  matchOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  matchName: { ...Typography.captionBold, color: Colors.white, flex: 1 },
+  matchesList: { paddingHorizontal: Spacing.xl, gap: Spacing.lg },
+  matchCard: { width: 74, alignItems: 'center' },
+  matchRing: { width: 74, height: 74, borderRadius: 37, alignItems: 'center', justifyContent: 'center', ...Shadow.md },
+  matchPhoto: { width: 66, height: 66, borderRadius: 33, borderWidth: 2, borderColor: t.bg },
+  matchNameRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 6, maxWidth: 74 },
+  matchName: { ...Typography.captionBold, color: t.text },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: Spacing['4xl'] },
   emptyText: { ...Typography.body, color: t.textMuted, marginTop: Spacing.md, textAlign: 'center', paddingHorizontal: Spacing.xl },
   messageRow: { flexDirection: 'row', paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, alignItems: 'center' },
