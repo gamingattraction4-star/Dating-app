@@ -84,7 +84,27 @@ public class EmailService {
             mailSender.send(message);
             log.info("✉️ Email sent to {}: {}", to, subject);
         } catch (Exception e) {
-            log.warn("Email send failed to {}: {}", to, e.getMessage());
+            log.error("❌ Email send FAILED to {} ({}): {}", to, subject, e.toString(), e);
+        }
+    }
+
+    /**
+     * Synchronous test send that surfaces the real error (used by the debug
+     * endpoint). Returns null on success, or the error message on failure.
+     */
+    public String testSend(String to) {
+        if (!enabled) return "MAIL_ENABLED is false — set it to true in the environment.";
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(from, fromName);
+            helper.setTo(to);
+            helper.setSubject("SparkMatch email test");
+            helper.setText("<h2>It works! ✅</h2><p>SparkMatch email delivery is configured correctly.</p>", true);
+            mailSender.send(message);
+            return null;
+        } catch (Exception e) {
+            return e.toString();
         }
     }
 

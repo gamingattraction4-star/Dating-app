@@ -16,10 +16,21 @@ spring:
       mail:
         smtp:
           auth: true
+          # Explicit SSL socket factory — required for port 465 to actually
+          # connect on some cloud hosts (Render); without it Spring "sends" but
+          # the socket never establishes.
           ssl:
             enable: ${MAIL_SSL:true}
+            trust: ${MAIL_HOST:smtp.hostinger.com}
+          socketFactory:
+            port: ${MAIL_PORT:465}
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
           starttls:
             enable: ${MAIL_STARTTLS:false}
+          connectiontimeout: 20000
+          timeout: 20000
+          writetimeout: 20000
         transport:
           protocol: smtp
 
